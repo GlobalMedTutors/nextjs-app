@@ -1,0 +1,250 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions", "views"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [citext]
+}
+
+model User {
+  id                  String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email               String               @unique
+  username            String               @unique @db.Citext
+  firstName           String               @map("first_name")
+  lastName            String               @map("last_name")
+  lastActiveAt        DateTime?            @map("last_active_at")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @default(now()) @updatedAt @map("updated_at")
+  instructor          Instructor?
+  student             Student?
+  notificationSetting NotificationSetting?
+  message             Message[]
+}
+
+model Instructor {
+  id              String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String                 @unique @map("user_id") @db.Uuid
+  ratePerHour     Decimal?               @map("rate_per_hour") @db.Money
+  stripeAccountId String?                @map("stripe_account_id")
+  createdAt       DateTime               @default(now()) @map("created_at")
+  updatedAt       DateTime               @default(now()) @updatedAt @map("updated_at")
+  user            User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subjects        Subject[]
+  lessons         Lesson[]
+  availability    Availability[]
+  reviews         Review[]
+  students        Student[]
+  profilePage     InstructorProfilePage?
+  credits         Credit[]
+  payouts         Payout[]
+  conversation    Conversation[]
+}
+
+model InstructorProfilePage {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  instructorId   String         @unique @map("instructor_id") @db.Uuid
+  bio            String?
+  avatar         String?
+  coverMedia     String?        @map("cover_media")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @default(now()) @updatedAt @map("updated_at")
+  privacySetting PrivacySetting @default(value: PUBLIC) @map("privacy_setting")
+  instructor     Instructor     @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+}
+
+model Student {
+  id                 String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId             String              @unique @map("user_id") @db.Uuid
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @default(now()) @updatedAt @map("updated_at")
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessons            Lesson[]
+  reviews            Review[]
+  instructors        Instructor[]
+  interestedSubjects Subject[]
+  credits            Credit[]
+  profilePage        StudentProfilePage?
+  conversation       Conversation[]
+}
+
+model StudentProfilePage {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId      String         @unique @map("student_id") @db.Uuid
+  bio            String?
+  avatar         String?
+  coverMedia     String?        @map("cover_media")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @default(now()) @updatedAt @map("updated_at")
+  privacySetting PrivacySetting @default(value: PUBLIC) @map("privacy_setting")
+  student        Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+enum PrivacySetting {
+  PUBLIC
+  PRIVATE
+}
+
+model Subject {
+  id                String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name              String       @unique
+  description       String?
+  instructors       Instructor[]
+  inerestedStudents Student[]
+  lessons           Lesson[]
+}
+
+model Availability {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  instructorId String     @map("instructor_id") @db.Uuid
+  dayOfWeek    Int        @map("day_of_week")
+  startTime    DateTime   @map("start_time")
+  endTime      DateTime   @map("end_time")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @default(now()) @updatedAt @map("updated_at")
+  instructor   Instructor @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+}
+
+model Lesson {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String       @default("Lesson")
+  studentId    String       @map("student_id") @db.Uuid
+  instructorId String       @map("instructor_id") @db.Uuid
+  subjectId    String       @map("subject_id") @db.Uuid
+  videoLink    String?      @map("video_link")
+  startTime    DateTime     @map("start_time")
+  endTime      DateTime     @map("end_time")
+  status       LessonStatus @default(value: PENDING)
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @default(now()) @updatedAt @map("updated_at")
+  student      Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  instructor   Instructor   @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  subject      Subject?     @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+}
+
+enum LessonStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELED
+}
+
+model Credit {
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId    String        @map("student_id") @db.Uuid
+  instructorId String        @map("instructor_id") @db.Uuid
+  balance      Int           @default(0)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @default(now()) @updatedAt @map("updated_at")
+  student      Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  instructor   Instructor    @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@unique([studentId, instructorId])
+}
+
+model Transaction {
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  creditId        String          @map("credit_id") @db.Uuid
+  money           Decimal         @db.Money
+  credits         Int
+  type            TransactionType
+  stripePaymentId String?         @unique @map("stripe_payment_id")
+  expiresAt       DateTime?       @map("expires_at")
+  paymentStatus   PaymentStatus   @default(PENDING)
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @default(now()) @updatedAt @map("updated_at")
+  credit          Credit          @relation(fields: [creditId], references: [id], onDelete: Cascade)
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  REFUNDED
+  FAILED
+}
+
+enum TransactionType {
+  CREDIT
+  DEBIT
+}
+
+model Payout {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  instructorId   String       @map("instructor_id") @db.Uuid
+  amount         Decimal      @db.Money
+  status         PayoutStatus @default(PENDING)
+  stripePayoutId String?      @map("stripe_payout_id")
+  isDisputed     Boolean      @default(false)
+  processedAt    DateTime?    @map("processed_at")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @default(now()) @updatedAt @map("updated_at")
+  instructor     Instructor   @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model Review {
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId     String      @map("student_id") @db.Uuid
+  instructorId  String      @map("instructor_id") @db.Uuid
+  overallRating Int         @default(0) @map("overall_rating")
+  comment       String?
+  createdAt     DateTime    @default(now()) @map("created_at")
+  student       Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  instructor    Instructor  @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  subRatings    SubRating[]
+}
+
+model SubRating {
+  id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reviewId String  @db.Uuid
+  category String
+  rating   Int
+  comment  String?
+  review   Review  @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+}
+
+model NotificationSetting {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String   @unique @map("user_id") @db.Uuid
+  pushEnabled  Boolean  @default(true) @map("push_enabled")
+  emailEnabled Boolean  @default(true) @map("email_enabled")
+  smsEnabled   Boolean  @default(false) @map("sms_enabled")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Conversation {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId    String     @db.Uuid
+  instructorId String     @db.Uuid
+  messages     Message[]
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @default(now()) @updatedAt @map("updated_at")
+  student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  instructor   Instructor @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, instructorId])
+}
+
+model Message {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversationId String       @db.Uuid
+  senderId       String       @db.Uuid
+  content        String?
+  media          String?
+  readAt         DateTime?    @map("read_at")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @default(now()) @updatedAt @map("updated_at")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+}
