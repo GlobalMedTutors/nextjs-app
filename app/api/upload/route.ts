@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth/get-session'
 
+// Force dynamic rendering to avoid build-time evaluation
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth()
@@ -17,10 +21,15 @@ export async function POST(request: NextRequest) {
 
     // Dynamic import to avoid build-time initialization
     const { put } = await import('@vercel/blob')
+    const token = process.env.BLOB_READ_WRITE_TOKEN
+    if (!token) {
+      return NextResponse.json({ error: 'BLOB_READ_WRITE_TOKEN not configured' }, { status: 500 })
+    }
+    
     const blob = await put(filepath, file, {
       access: 'public',
       addRandomSuffix: true,
-      token: process.env.BLOB_READ_WRITE_TOKEN,
+      token,
     })
 
     return NextResponse.json({ url: blob.url, filepath: blob.pathname })
