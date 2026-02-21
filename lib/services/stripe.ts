@@ -3,7 +3,7 @@ import { ENV } from '@/lib/config/env'
 import { prisma } from '@/lib/db/prisma'
 
 export const stripe = new Stripe(ENV.STRIPE_SECRET_KEY, {
-  apiVersion: '2024-12-18.acacia',
+  apiVersion: '2026-01-28.clover',
 })
 
 export const createPaymentIntent = async (instructorId: string, amount: number, studentId: string) => {

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth/get-session'
-import { put } from '@vercel/blob'
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,9 +15,12 @@ export async function POST(request: NextRequest) {
     const filename = file.name
     const filepath = `${entityType.toLowerCase()}/${user.id}/${filename}`
 
+    // Dynamic import to avoid build-time initialization
+    const { put } = await import('@vercel/blob')
     const blob = await put(filepath, file, {
       access: 'public',
       addRandomSuffix: true,
+      token: process.env.BLOB_READ_WRITE_TOKEN,
     })
 
     return NextResponse.json({ url: blob.url, filepath: blob.pathname })

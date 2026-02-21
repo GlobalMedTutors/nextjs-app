@@ -5,10 +5,11 @@ import { LessonStatus } from '@prisma/client'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const lesson = await findLessonById(params.id)
+    const { id } = await params
+    const lesson = await findLessonById(id)
     if (!lesson) {
       return NextResponse.json({ error: 'Lesson not found' }, { status: 404 })
     }
@@ -21,9 +22,10 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await requireAuth()
     const body = await request.json()
     const { status } = body
@@ -32,7 +34,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
     }
 
-    const updated = await updateLessonStatus(user, params.id, status as LessonStatus)
+    const updated = await updateLessonStatus(user, id, status as LessonStatus)
     if (!updated) {
       return NextResponse.json({ error: 'Lesson not found or unauthorized' }, { status: 404 })
     }

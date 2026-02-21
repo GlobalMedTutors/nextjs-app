@@ -18,5 +18,6 @@ export default async function HomePage() {
     redirect('/instructor')
   }
 
-  redirect('/sign-in')
+  // If user exists but has no role, redirect to onboarding
+  redirect('/student/onboarding')
 }

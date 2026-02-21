@@ -1,5 +1,5 @@
-import { put, list, del } from '@vercel/blob'
 import crypto from 'crypto'
+import { ENV } from '@/lib/config/env'
 
 export type MediaUploadUrlPart = {
   uploadUrl: string
@@ -33,12 +33,20 @@ export async function uploadFile(
   file: Buffer | File
 ): Promise<string | null> {
   try {
+    // Dynamic import to avoid build-time initialization
+    const { put } = await import('@vercel/blob')
     const uniqueFilename = generateUniqueFilename(filename)
     const filepath = `${entityType.toLowerCase()}/${userId}/${uniqueFilename}`
 
+    const token = process.env.BLOB_READ_WRITE_TOKEN || ENV.BLOB_READ_WRITE_TOKEN
+    if (!token) {
+      throw new Error('BLOB_READ_WRITE_TOKEN is required')
+    }
+    
     const blob = await put(filepath, file, {
       access: 'public',
       addRandomSuffix: false,
+      token,
     })
 
     return blob.url

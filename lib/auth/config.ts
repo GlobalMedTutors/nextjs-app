@@ -90,8 +90,8 @@ export const authOptions: NextAuthOptions = {
         
         if (dbUser) {
           session.user.id = dbUser.id
-          ;(session.user as any).instructor = dbUser.instructor
-          ;(session.user as any).student = dbUser.student
+          session.user.instructor = dbUser.instructor
+          session.user.student = dbUser.student
         }
       }
       return session
@@ -106,7 +106,6 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: '/sign-in',
-    signUp: '/sign-up',
   },
   session: {
     strategy: 'jwt',
