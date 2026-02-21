@@ -1,7 +1,5 @@
 export const ENV = {
   ENV: process.env.ENV ?? 'development',
-  // AWS Cognito (still required)
-  COGNITO_JWKS_URL: process.env.COGNITO_JWKS_URL,
   // Zoom (still required)
   ZOOM_CLIENT_ID: process.env.ZOOM_CLIENT_ID ?? '',
   ZOOM_CLIENT_SECRET: process.env.ZOOM_CLIENT_SECRET ?? '',
