@@ -140,7 +140,7 @@ export default function SchedulePage() {
     if (dayAvailability.length === 0) return []
 
     const slots: string[] = []
-    dayAvailability.forEach((av) => {
+    dayAvailability.forEach((av: any) => {
       // Extract time from availability (which is stored as a full datetime)
       // The datetime was created with local time, then converted to ISO (UTC)
       // So we need to parse it and extract the local time components
@@ -155,6 +155,7 @@ export default function SchedulePage() {
       const endMinutes = availabilityEnd.getMinutes()
       
       console.log(`Processing availability: ${startHours}:${startMinutes.toString().padStart(2, '0')} - ${endHours}:${endMinutes.toString().padStart(2, '0')} (local time)`)
+      console.log(`  Original UTC times: ${av.startTime} to ${av.endTime}`)
       
       // Create date objects for the selected date with the availability times
       const slotStart = new Date(date)
@@ -164,9 +165,11 @@ export default function SchedulePage() {
       slotEndMax.setHours(endHours, endMinutes, 0, 0)
 
       console.log(`Slot range for ${date.toDateString()}: ${slotStart.toLocaleTimeString()} - ${slotEndMax.toLocaleTimeString()}`)
+      console.log(`  Slot start: ${slotStart.toISOString()}, Slot end max: ${slotEndMax.toISOString()}`)
 
       // Generate time slots in 30-minute intervals
       let currentSlot = new Date(slotStart)
+      let slotCount = 0
       while (currentSlot < slotEndMax) {
         const slotEnd = new Date(currentSlot)
         slotEnd.setMinutes(slotEnd.getMinutes() + duration)
@@ -174,14 +177,17 @@ export default function SchedulePage() {
         // Only add slot if it fits within the availability window
         if (slotEnd <= slotEndMax) {
           slots.push(currentSlot.toISOString())
+          slotCount++
+          console.log(`  Added slot ${slotCount}: ${currentSlot.toLocaleTimeString()} - ${slotEnd.toLocaleTimeString()}`)
         }
 
         currentSlot = new Date(currentSlot)
         currentSlot.setMinutes(currentSlot.getMinutes() + 30) // 30-minute intervals
       }
+      console.log(`  Total slots for this availability: ${slotCount}`)
     })
     
-    console.log(`Generated ${slots.length} time slots for selected date`)
+    console.log(`Generated ${slots.length} total time slots for selected date`)
 
     return slots
   }
