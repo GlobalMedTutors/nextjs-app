@@ -16,20 +16,32 @@ export default function InstructorOnboardingPage() {
   })
   const [availableSubjects, setAvailableSubjects] = useState<Array<{ id: string; name: string }>>([])
   const [submitting, setSubmitting] = useState(false)
+  const [loadingSubjects, setLoadingSubjects] = useState(true)
+  const [subjectsError, setSubjectsError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchSubjects()
   }, [])
 
   const fetchSubjects = async () => {
+    setLoadingSubjects(true)
+    setSubjectsError(null)
     try {
       const res = await fetch('/api/subjects')
       if (res.ok) {
         const data = await res.json()
-        setAvailableSubjects(data)
+        setAvailableSubjects(data || [])
+        if (!data || data.length === 0) {
+          setSubjectsError('No subjects available. Please contact support.')
+        }
+      } else {
+        setSubjectsError('Failed to load subjects. Please refresh the page.')
       }
     } catch (error) {
       console.error('Error fetching subjects:', error)
+      setSubjectsError('Failed to load subjects. Please refresh the page.')
+    } finally {
+      setLoadingSubjects(false)
     }
   }
 
@@ -158,9 +170,20 @@ export default function InstructorOnboardingPage() {
         {step === 2 && (
           <form onSubmit={(e) => {
             e.preventDefault()
-            if (formData.bio && formData.ratePerHour && formData.subjects.length > 0) {
-              setStep(3)
+            // Validate form
+            if (!formData.bio || !formData.bio.trim()) {
+              alert('Please enter a bio')
+              return
             }
+            if (!formData.ratePerHour || parseFloat(formData.ratePerHour) <= 0) {
+              alert('Please enter a valid rate per hour')
+              return
+            }
+            if (formData.subjects.length === 0) {
+              alert('Please select at least one subject you teach')
+              return
+            }
+            setStep(3)
           }} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -193,19 +216,56 @@ export default function InstructorOnboardingPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Subjects You Teach *
               </label>
-              <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-300 rounded-md p-2">
-                {availableSubjects.map((subject) => (
-                  <label key={subject.id} className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.subjects.includes(subject.id)}
-                      onChange={() => toggleSubject(subject.id)}
-                      className="rounded"
-                    />
-                    <span>{subject.name}</span>
-                  </label>
-                ))}
-              </div>
+              {loadingSubjects ? (
+                <div className="p-4 text-center text-gray-500">Loading subjects...</div>
+              ) : subjectsError ? (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+                  {subjectsError}
+                </div>
+              ) : availableSubjects.length === 0 ? (
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800 text-sm space-y-2">
+                  <p>No subjects available in the database.</p>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const res = await fetch('/api/subjects/seed', { method: 'POST' })
+                        if (res.ok) {
+                          await fetchSubjects()
+                          alert('Subjects have been added! Please select the subjects you teach.')
+                        } else {
+                          alert('Failed to seed subjects. Please contact support.')
+                        }
+                      } catch (error) {
+                        console.error('Error seeding subjects:', error)
+                        alert('Failed to seed subjects. Please contact support.')
+                      }
+                    }}
+                    className="text-indigo-600 hover:text-indigo-800 underline text-sm font-medium"
+                  >
+                    Click here to add default subjects
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-300 rounded-md p-2">
+                  {availableSubjects.map((subject) => (
+                    <label key={subject.id} className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                      <input
+                        type="checkbox"
+                        checked={formData.subjects.includes(subject.id)}
+                        onChange={() => toggleSubject(subject.id)}
+                        className="rounded"
+                      />
+                      <span className="flex-1">{subject.name}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+              {formData.subjects.length > 0 && (
+                <p className="mt-2 text-sm text-gray-600">
+                  {formData.subjects.length} subject{formData.subjects.length !== 1 ? 's' : ''} selected
+                </p>
+              )}
             </div>
             <div className="flex gap-4">
               <button
