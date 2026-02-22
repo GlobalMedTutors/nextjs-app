@@ -8,6 +8,10 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '2mb',
     },
   },
+  // Ensure BLOB_READ_WRITE_TOKEN is available during build
+  env: {
+    BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN || '',
+  },
 };
 
 export default nextConfig;
