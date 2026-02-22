@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     
     // Type-safe way to get instructor ID
     let instructorId: string | null = paramInstructorId
-    if (!instructorId && user.instructor) {
+    if (!instructorId && user.instructor !== null) {
       instructorId = user.instructor.id
     }
 
