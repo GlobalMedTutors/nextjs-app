@@ -1,14 +1,12 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from './config'
 import { prisma } from '@/lib/db/prisma'
-import { Prisma } from '@prisma/client'
+import type { User, Instructor, Student } from '@prisma/client'
 
-type UserWithRelations = Prisma.UserGetPayload<{
-  include: {
-    instructor: true
-    student: true
-  }
-}>
+export type UserWithRelations = User & {
+  instructor: Instructor | null
+  student: Student | null
+}
 
 export async function getCurrentUser(): Promise<UserWithRelations | null> {
   const session = await getServerSession(authOptions)
@@ -25,7 +23,7 @@ export async function getCurrentUser(): Promise<UserWithRelations | null> {
     },
   })
 
-  return user
+  return user as UserWithRelations | null
 }
 
 export async function requireAuth(): Promise<UserWithRelations> {
