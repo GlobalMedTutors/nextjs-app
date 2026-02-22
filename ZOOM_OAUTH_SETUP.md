@@ -72,17 +72,17 @@ You'll also need your **Zoom Account ID** (`ZOOM_ACCOUNT_ID`):
 
 ### In Zoom Marketplace:
 - [ ] App Type: **Server-to-Server OAuth**
-- [ ] Client ID: `QOsKEVT2TSyZYysC6rcNZA` ✅ (already set)
-- [ ] Client Secret: `1lUfRA7UgXjbUdtyETs5QvstRi88NSo1` ✅ (already set)
-- [ ] Account ID: `[YOUR_ACCOUNT_ID]` ⚠️ (needs to be set)
+- [ ] Client ID: ✅ (set in Vercel)
+- [ ] Client Secret: ✅ (set in Vercel)
+- [ ] Account ID: ✅ (set in Vercel)
 - [ ] Redirect URL: `https://global-med-tutors.vercel.app` (placeholder if required)
 - [ ] Scopes: `meeting:write`, `meeting:read`
 - [ ] Allowlist: Configure if required by your Zoom plan
 
 ### In Vercel Environment Variables:
-- [x] `ZOOM_CLIENT_ID` = `QOsKEVT2TSyZYysC6rcNZA` ✅
-- [x] `ZOOM_CLIENT_SECRET` = `1lUfRA7UgXjbUdtyETs5QvstRi88NSo1` ✅
-- [ ] `ZOOM_ACCOUNT_ID` = `[YOUR_ACCOUNT_ID]` ⚠️ **Still needs to be set**
+- [x] `ZOOM_CLIENT_ID` ✅ (set)
+- [x] `ZOOM_CLIENT_SECRET` ✅ (set)
+- [x] `ZOOM_ACCOUNT_ID` ✅ (set)
 
 ## Setting ZOOM_ACCOUNT_ID
 
