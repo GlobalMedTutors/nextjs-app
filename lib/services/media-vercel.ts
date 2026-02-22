@@ -33,8 +33,8 @@ export async function uploadFile(
   file: Buffer | File
 ): Promise<string | null> {
   try {
-    // Dynamic import to avoid build-time initialization
-    const { put } = await import('@vercel/blob')
+    // Use wrapper to prevent build-time initialization
+    const { uploadToBlob } = await import('@/lib/services/blob-wrapper')
     const uniqueFilename = generateUniqueFilename(filename)
     const filepath = `${entityType.toLowerCase()}/${userId}/${uniqueFilename}`
 
@@ -43,7 +43,7 @@ export async function uploadFile(
       throw new Error('BLOB_READ_WRITE_TOKEN is required')
     }
     
-    const blob = await put(filepath, file, {
+    const blob = await uploadToBlob(filepath, file, {
       access: 'public',
       addRandomSuffix: false,
       token,

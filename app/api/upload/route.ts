@@ -19,14 +19,14 @@ export async function POST(request: NextRequest) {
     const filename = file.name
     const filepath = `${entityType.toLowerCase()}/${user.id}/${filename}`
 
-    // Dynamic import to avoid build-time initialization
-    const { put } = await import('@vercel/blob')
+    // Use wrapper to prevent build-time initialization
+    const { uploadToBlob } = await import('@/lib/services/blob-wrapper')
     const token = process.env.BLOB_READ_WRITE_TOKEN
     if (!token) {
       return NextResponse.json({ error: 'BLOB_READ_WRITE_TOKEN not configured' }, { status: 500 })
     }
     
-    const blob = await put(filepath, file, {
+    const blob = await uploadToBlob(filepath, file, {
       access: 'public',
       addRandomSuffix: true,
       token,
