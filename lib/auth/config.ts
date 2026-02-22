@@ -72,7 +72,14 @@ export const authOptions: NextAuthOptions = {
           user.id = dbUser.id
         } catch (error) {
           console.error('Error creating/updating user:', error)
-          return false
+          // Log the full error for debugging
+          if (error instanceof Error) {
+            console.error('Error message:', error.message)
+            console.error('Error stack:', error.stack)
+          }
+          // Don't block sign-in if it's just a database issue - allow the user to sign in
+          // The error will be visible in logs for debugging
+          return true // Allow sign-in even if DB update fails
         }
       }
       return true
