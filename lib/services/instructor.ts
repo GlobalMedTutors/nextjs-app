@@ -64,3 +64,53 @@ export async function searchInstructors(subjectId: string, offset: number = 0, l
     take: limit,
   })
 }
+
+export async function upsertInstructor(
+  userId: string,
+  data: {
+    bio?: string
+    ratePerHour?: number
+    subjects?: string[]
+  }
+) {
+  return await prisma.instructor.upsert({
+    where: { userId },
+    update: {
+      ratePerHour: data.ratePerHour ? data.ratePerHour : undefined,
+      subjects: data.subjects
+        ? {
+            set: data.subjects.map((id) => ({ id })),
+          }
+        : undefined,
+      profilePage: {
+        upsert: {
+          create: {
+            bio: data.bio,
+          },
+          update: {
+            bio: data.bio || undefined,
+          },
+        },
+      },
+    },
+    create: {
+      userId,
+      ratePerHour: data.ratePerHour,
+      subjects: data.subjects
+        ? {
+            connect: data.subjects.map((id) => ({ id })),
+          }
+        : undefined,
+      profilePage: {
+        create: {
+          bio: data.bio,
+        },
+      },
+    },
+    include: {
+      user: true,
+      profilePage: true,
+      subjects: true,
+    },
+  })
+}

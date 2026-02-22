@@ -35,8 +35,19 @@ export default function StudentOnboardingPage() {
       }
 
       // Create student profile
-      // This would typically be done via a separate API endpoint
-      // For now, we'll just redirect
+      const studentRes = await fetch('/api/students', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bio: formData.bio,
+        }),
+      })
+
+      if (!studentRes.ok) {
+        const error = await studentRes.json()
+        throw new Error(error.error || 'Failed to create student profile')
+      }
+
       router.push('/student')
     } catch (error) {
       console.error('Error completing onboarding:', error)

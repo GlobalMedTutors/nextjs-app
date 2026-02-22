@@ -63,11 +63,25 @@ export default function InstructorOnboardingPage() {
       }
 
       // Create instructor profile
-      // This would typically be done via a separate API endpoint
+      const instructorRes = await fetch('/api/instructors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bio: formData.bio,
+          ratePerHour: formData.ratePerHour,
+          subjects: formData.subjects,
+        }),
+      })
+
+      if (!instructorRes.ok) {
+        const error = await instructorRes.json()
+        throw new Error(error.error || 'Failed to create instructor profile')
+      }
+
       router.push('/instructor')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error completing onboarding:', error)
-      alert('Failed to complete onboarding')
+      alert(error.message || 'Failed to complete onboarding')
     } finally {
       setSubmitting(false)
     }

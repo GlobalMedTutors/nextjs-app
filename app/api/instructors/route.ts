@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUser } from '@/lib/auth/get-session'
-import { findInstructorByUsername, searchInstructors } from '@/lib/services/instructor'
+import { requireAuth } from '@/lib/auth/get-session'
+import { findInstructorByUsername, searchInstructors, upsertInstructor } from '@/lib/services/instructor'
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,6 +26,32 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
   } catch (error: any) {
     console.error('Error fetching instructors:', error)
+    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 })
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const user = await requireAuth()
+    const body = await request.json()
+    const { bio, ratePerHour, subjects } = body
+
+    if (!ratePerHour || !subjects || !Array.isArray(subjects) || subjects.length === 0) {
+      return NextResponse.json(
+        { error: 'ratePerHour and subjects are required' },
+        { status: 400 }
+      )
+    }
+
+    const instructor = await upsertInstructor(user.id, {
+      bio,
+      ratePerHour: parseFloat(ratePerHour),
+      subjects,
+    })
+
+    return NextResponse.json(instructor)
+  } catch (error: any) {
+    console.error('Error creating/updating instructor:', error)
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 })
   }
 }
