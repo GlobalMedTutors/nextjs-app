@@ -15,7 +15,7 @@ async function getBlobModule() {
 export async function uploadToBlob(
   filepath: string,
   file: File | Buffer,
-  options: { access?: 'public' | 'private'; addRandomSuffix?: boolean; token?: string }
+  options: { access: 'public' | 'private'; addRandomSuffix?: boolean; token: string }
 ) {
   const { put } = await getBlobModule()
   return put(filepath, file, options)
