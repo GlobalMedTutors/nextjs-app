@@ -1,28 +1,25 @@
 # Environment Variables Status
 
-## ✅ Successfully Set
+## ✅ Successfully Set in Vercel
 
-### Stripe (Sandbox)
+### Stripe (Sandbox/Test Mode)
 - ✅ `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` - Set (test key)
   - Set for: Production, Preview, Development
 
 - ✅ `STRIPE_SECRET_KEY` - Set (test key)
   - Set for: Production, Preview, Development
 
-### Zoom
+### Zoom (Server-to-Server OAuth)
 - ✅ `ZOOM_CLIENT_ID` - Set
   - Set for: Production, Preview, Development
 
 - ✅ `ZOOM_CLIENT_SECRET` - Set
   - Set for: Production, Preview, Development
 
-## ⚠️ Still Needed
+- ✅ `ZOOM_ACCOUNT_ID` - Set
+  - Set for: Production, Preview, Development
 
-### Zoom Account ID
-- ⚠️ `ZOOM_ACCOUNT_ID` - Required for Zoom API calls
-  - This is your Zoom account ID (not the client ID)
-  - You can find it in your Zoom Developer Dashboard
-  - Format: Usually looks like `xxxxxxxxxx` (alphanumeric string)
+## ⚠️ Still Needed
 
 ### Stripe Webhook Secret
 - ⚠️ `STRIPE_WEBHOOK_SECRET` - Required for webhook signature verification
@@ -33,13 +30,21 @@
     3. Copy the "Signing secret" (starts with `whsec_`)
     4. Set it as `STRIPE_WEBHOOK_SECRET` in Vercel
 
+## Security Notes
+
+✅ **No secrets are stored in the codebase**
+- All environment variables are set in Vercel only
+- `.env` files are in `.gitignore`
+- Documentation files do not contain actual secret values
+
 ## How to Set Missing Variables
 
 ### Via Vercel CLI:
 ```bash
 cd nextjs-app
-echo "YOUR_ZOOM_ACCOUNT_ID" | vercel env add ZOOM_ACCOUNT_ID production --yes
 echo "whsec_YOUR_WEBHOOK_SECRET" | vercel env add STRIPE_WEBHOOK_SECRET production --yes
+echo "whsec_YOUR_WEBHOOK_SECRET" | vercel env add STRIPE_WEBHOOK_SECRET preview --yes
+echo "whsec_YOUR_WEBHOOK_SECRET" | vercel env add STRIPE_WEBHOOK_SECRET development --yes
 ```
 
 ### Via Vercel Dashboard:
@@ -71,5 +76,4 @@ After setting all variables, you'll need to:
 - All Stripe keys are in **sandbox/test mode** (as requested)
 - Environment variables are set for Production, Preview, and Development
 - The app will work for basic functionality, but:
-  - **Zoom meetings won't be created** until `ZOOM_ACCOUNT_ID` is set
-  - **Webhook verification will fail** until `STRIPE_WEBHOOK_SECRET` is set (payments will still work, but credits may not be added automatically)
+  - **Webhook verification will fail** until `STRIPE_WEBHOOK_SECRET` is set (payments will still work, but credits may not be added automatically via webhook - they can be added manually if needed)
