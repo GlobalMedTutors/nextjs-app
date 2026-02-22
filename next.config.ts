@@ -10,8 +10,10 @@ const nextConfig: NextConfig = {
   },
   // Ensure BLOB_READ_WRITE_TOKEN is available during build
   env: {
-    BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN || '',
+    BLOB_READ_WRITE_TOKEN: process.env.BLOB_READ_WRITE_TOKEN || 'vercel_blob_rw_LKhlxIzNVfk4jzJe_XuKyfvtNqfOMxBIFXyN0jpQRe9IzR1',
   },
+  // Disable static optimization for API routes
+  output: 'standalone',
 };
 
 export default nextConfig;
