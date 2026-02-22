@@ -119,20 +119,32 @@ export default function SchedulePage() {
     const dayOfWeek = date.getDay()
     const dayAvailability = availability.filter((av) => av.dayOfWeek === dayOfWeek)
 
+    console.log('Selected date:', date, 'Day of week:', dayOfWeek)
+    console.log('All availability:', availability)
+    console.log('Filtered availability for day:', dayAvailability)
+
     if (dayAvailability.length === 0) return []
 
     const slots: string[] = []
     dayAvailability.forEach((av) => {
-      const start = new Date(av.startTime)
-      const end = new Date(av.endTime)
+      // Extract time from availability (which is stored as a full datetime)
+      const availabilityStart = new Date(av.startTime)
+      const availabilityEnd = new Date(av.endTime)
+      
+      // Create date objects for the selected date with the availability times
       const slotStart = new Date(date)
-      slotStart.setHours(start.getHours(), start.getMinutes(), 0, 0)
+      slotStart.setHours(availabilityStart.getHours(), availabilityStart.getMinutes(), 0, 0)
+      
+      const slotEndMax = new Date(date)
+      slotEndMax.setHours(availabilityEnd.getHours(), availabilityEnd.getMinutes(), 0, 0)
 
-      while (slotStart < end) {
+      // Generate time slots in 30-minute intervals
+      while (slotStart < slotEndMax) {
         const slotEnd = new Date(slotStart)
         slotEnd.setMinutes(slotEnd.getMinutes() + duration)
 
-        if (slotEnd <= end) {
+        // Only add slot if it fits within the availability window
+        if (slotEnd <= slotEndMax) {
           slots.push(slotStart.toISOString())
         }
 
