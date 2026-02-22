@@ -142,29 +142,46 @@ export default function SchedulePage() {
     const slots: string[] = []
     dayAvailability.forEach((av) => {
       // Extract time from availability (which is stored as a full datetime)
+      // The datetime was created with local time, then converted to ISO (UTC)
+      // So we need to parse it and extract the local time components
       const availabilityStart = new Date(av.startTime)
       const availabilityEnd = new Date(av.endTime)
       
+      // Use local time hours/minutes since that's what the instructor set
+      // The Date object automatically handles timezone conversion
+      const startHours = availabilityStart.getHours()
+      const startMinutes = availabilityStart.getMinutes()
+      const endHours = availabilityEnd.getHours()
+      const endMinutes = availabilityEnd.getMinutes()
+      
+      console.log(`Processing availability: ${startHours}:${startMinutes.toString().padStart(2, '0')} - ${endHours}:${endMinutes.toString().padStart(2, '0')} (local time)`)
+      
       // Create date objects for the selected date with the availability times
       const slotStart = new Date(date)
-      slotStart.setHours(availabilityStart.getHours(), availabilityStart.getMinutes(), 0, 0)
+      slotStart.setHours(startHours, startMinutes, 0, 0)
       
       const slotEndMax = new Date(date)
-      slotEndMax.setHours(availabilityEnd.getHours(), availabilityEnd.getMinutes(), 0, 0)
+      slotEndMax.setHours(endHours, endMinutes, 0, 0)
+
+      console.log(`Slot range for ${date.toDateString()}: ${slotStart.toLocaleTimeString()} - ${slotEndMax.toLocaleTimeString()}`)
 
       // Generate time slots in 30-minute intervals
-      while (slotStart < slotEndMax) {
-        const slotEnd = new Date(slotStart)
+      let currentSlot = new Date(slotStart)
+      while (currentSlot < slotEndMax) {
+        const slotEnd = new Date(currentSlot)
         slotEnd.setMinutes(slotEnd.getMinutes() + duration)
 
         // Only add slot if it fits within the availability window
         if (slotEnd <= slotEndMax) {
-          slots.push(slotStart.toISOString())
+          slots.push(currentSlot.toISOString())
         }
 
-        slotStart.setMinutes(slotStart.getMinutes() + 30) // 30-minute intervals
+        currentSlot = new Date(currentSlot)
+        currentSlot.setMinutes(currentSlot.getMinutes() + 30) // 30-minute intervals
       }
     })
+    
+    console.log(`Generated ${slots.length} time slots for selected date`)
 
     return slots
   }
