@@ -77,9 +77,8 @@ export const authOptions: NextAuthOptions = {
             console.error('Error message:', error.message)
             console.error('Error stack:', error.stack)
           }
-          // Don't block sign-in if it's just a database issue - allow the user to sign in
-          // The error will be visible in logs for debugging
-          return true // Allow sign-in even if DB update fails
+          // Block sign-in if database operation fails - this indicates a serious issue
+          return false
         }
       }
       return true
