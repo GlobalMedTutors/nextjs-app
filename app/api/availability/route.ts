@@ -7,8 +7,12 @@ export async function GET(request: NextRequest) {
     const user = await requireAuth()
     const searchParams = request.nextUrl.searchParams
     const paramInstructorId = searchParams.get('instructorId')
-    const instructorIdFromUser = user.instructor?.id
-    const instructorId = paramInstructorId || instructorIdFromUser || null
+    
+    // Type-safe way to get instructor ID
+    let instructorId: string | null = paramInstructorId
+    if (!instructorId && user.instructor) {
+      instructorId = user.instructor.id
+    }
 
     if (!instructorId) {
       return NextResponse.json({ error: 'Instructor ID required' }, { status: 400 })
