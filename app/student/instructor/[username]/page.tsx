@@ -36,7 +36,15 @@ export default function InstructorPage() {
       const res = await fetch(`/api/instructors?username=${username}`)
       if (res.ok) {
         const data = await res.json()
+        console.log('Fetched instructor data:', data)
+        if (!data || !data.user) {
+          console.error('Instructor data missing user:', data)
+          return
+        }
         setInstructor(data)
+      } else {
+        const error = await res.json()
+        console.error('Failed to fetch instructor:', error)
       }
     } catch (error) {
       console.error('Error fetching instructor:', error)
@@ -57,6 +65,14 @@ export default function InstructorPage() {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <p>Instructor not found</p>
+      </div>
+    )
+  }
+
+  if (!instructor.user) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <p>Error: Instructor user data is missing</p>
       </div>
     )
   }

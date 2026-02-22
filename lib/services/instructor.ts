@@ -38,7 +38,22 @@ export async function findInstructorByUsername(username: string) {
       },
     },
   })
-  return user?.instructor
+  
+  if (!user?.instructor) {
+    return null
+  }
+  
+  // Return instructor with user relation included
+  return {
+    ...user.instructor,
+    user: {
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      username: user.username,
+      email: user.email,
+    },
+  }
 }
 
 export async function searchInstructors(subjectId: string, offset: number = 0, limit: number = 5) {
