@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth()
     const searchParams = request.nextUrl.searchParams
-    const instructorId = searchParams.get('instructorId') || user.instructor?.id
+    const instructorId = searchParams.get('instructorId') || user.instructor?.id || undefined
 
     if (!instructorId) {
       return NextResponse.json({ error: 'Instructor ID required' }, { status: 400 })
