@@ -30,9 +30,23 @@ export default function InstructorOnboardingPage() {
       const res = await fetch('/api/subjects')
       if (res.ok) {
         const data = await res.json()
-        setAvailableSubjects(data || [])
         if (!data || data.length === 0) {
-          setSubjectsError('No subjects available. Please contact support.')
+          // Auto-seed subjects if none exist
+          const seedRes = await fetch('/api/subjects/seed', { method: 'POST' })
+          if (seedRes.ok) {
+            // Fetch again after seeding
+            const res2 = await fetch('/api/subjects')
+            if (res2.ok) {
+              const data2 = await res2.json()
+              setAvailableSubjects(data2 || [])
+            } else {
+              setSubjectsError('Failed to load subjects after seeding. Please refresh the page.')
+            }
+          } else {
+            setSubjectsError('Failed to seed subjects. Please contact support.')
+          }
+        } else {
+          setAvailableSubjects(data)
         }
       } else {
         setSubjectsError('Failed to load subjects. Please refresh the page.')
@@ -223,28 +237,8 @@ export default function InstructorOnboardingPage() {
                   {subjectsError}
                 </div>
               ) : availableSubjects.length === 0 ? (
-                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800 text-sm space-y-2">
-                  <p>No subjects available in the database.</p>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        const res = await fetch('/api/subjects/seed', { method: 'POST' })
-                        if (res.ok) {
-                          await fetchSubjects()
-                          alert('Subjects have been added! Please select the subjects you teach.')
-                        } else {
-                          alert('Failed to seed subjects. Please contact support.')
-                        }
-                      } catch (error) {
-                        console.error('Error seeding subjects:', error)
-                        alert('Failed to seed subjects. Please contact support.')
-                      }
-                    }}
-                    className="text-indigo-600 hover:text-indigo-800 underline text-sm font-medium"
-                  >
-                    Click here to add default subjects
-                  </button>
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800 text-sm">
+                  No subjects available. Loading default subjects...
                 </div>
               ) : (
                 <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-300 rounded-md p-2">
