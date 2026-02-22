@@ -103,6 +103,10 @@ export default function SchedulePage() {
       if (res.ok) {
         const data = await res.json()
         console.log('Fetched availability for instructor:', instructor.id, data)
+        // Log each availability's dayOfWeek to debug
+        data.forEach((av: any) => {
+          console.log(`Availability: dayOfWeek=${av.dayOfWeek}, startTime=${av.startTime}, endTime=${av.endTime}`)
+        })
         setAvailability(data || [])
       } else {
         const errorText = await res.text()
@@ -116,11 +120,21 @@ export default function SchedulePage() {
   const getAvailableTimeSlots = (date: Date) => {
     if (!selectedDate || !instructor) return []
 
-    const dayOfWeek = date.getDay()
-    const dayAvailability = availability.filter((av) => av.dayOfWeek === dayOfWeek)
+    const dayOfWeek = date.getDay() // JavaScript: 0=Sunday, 1=Monday, ..., 6=Saturday
+    console.log('Selected date:', date, 'Day of week (JS):', dayOfWeek, 'Day name:', ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayOfWeek])
+    console.log('All availability:', availability.map((av: any) => ({
+      dayOfWeek: av.dayOfWeek,
+      dayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][av.dayOfWeek],
+      startTime: av.startTime,
+      endTime: av.endTime
+    })))
+    
+    const dayAvailability = availability.filter((av: any) => {
+      // Ensure we're comparing the same type
+      const avDay = typeof av.dayOfWeek === 'number' ? av.dayOfWeek : parseInt(av.dayOfWeek)
+      return avDay === dayOfWeek
+    })
 
-    console.log('Selected date:', date, 'Day of week:', dayOfWeek)
-    console.log('All availability:', availability)
     console.log('Filtered availability for day:', dayAvailability)
 
     if (dayAvailability.length === 0) return []
