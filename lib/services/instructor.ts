@@ -50,7 +50,8 @@ export async function searchInstructors(subjectId: string, offset: number = 0, l
         },
       },
       ratePerHour: { not: null },
-      stripeAccountId: { not: null },
+      // Removed stripeAccountId requirement - instructors can be searchable before Stripe setup
+      // Stripe setup can be done later when they receive their first booking
     },
     include: {
       user: true,

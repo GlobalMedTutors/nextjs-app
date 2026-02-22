@@ -50,10 +50,18 @@ export default function SearchPage() {
     setLoading(true)
     try {
       const res = await fetch(`/api/instructors?subjectId=${selectedSubject}`)
-      const data = await res.json()
-      setInstructors(data)
+      if (res.ok) {
+        const data = await res.json()
+        console.log('Found instructors:', data)
+        setInstructors(data)
+      } else {
+        const error = await res.json()
+        console.error('Error searching instructors:', error)
+        setInstructors([])
+      }
     } catch (error) {
       console.error('Error searching instructors:', error)
+      setInstructors([])
     } finally {
       setLoading(false)
     }
