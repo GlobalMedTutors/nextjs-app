@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { stripe } from '@/lib/services/stripe'
+import { getStripe } from '@/lib/services/stripe'
 import { ENV } from '@/lib/config/env'
 import { purchaseCredits } from '@/lib/services/credit'
 import { prisma } from '@/lib/db/prisma'
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
 
   let event
   try {
-    event = stripe.webhooks.constructEvent(body, signature, ENV.STRIPE_WEBHOOK_SECRET)
+    event = getStripe().webhooks.constructEvent(body, signature, ENV.STRIPE_WEBHOOK_SECRET)
   } catch (err: any) {
     console.error('Webhook signature verification failed:', err.message)
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })

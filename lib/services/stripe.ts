@@ -2,12 +2,23 @@ import Stripe from 'stripe'
 import { ENV } from '@/lib/config/env'
 import { prisma } from '@/lib/db/prisma'
 
-export const stripe = new Stripe(ENV.STRIPE_SECRET_KEY, {
-  apiVersion: '2026-01-28.clover',
-})
+// Lazy initialization to avoid build-time error when STRIPE_SECRET_KEY is not set
+let _stripe: Stripe | null = null
+
+export function getStripe(): Stripe {
+  if (!_stripe) {
+    if (!ENV.STRIPE_SECRET_KEY) {
+      throw new Error('STRIPE_SECRET_KEY is not configured')
+    }
+    _stripe = new Stripe(ENV.STRIPE_SECRET_KEY, {
+      apiVersion: '2026-01-28.clover',
+    })
+  }
+  return _stripe
+}
 
 export const createPaymentIntent = async (instructorId: string, amount: number, studentId: string) => {
-  const paymentIntent = await stripe.paymentIntents.create({
+  const paymentIntent = await getStripe().paymentIntents.create({
     amount: amount * 100,
     currency: 'usd',
     metadata: { studentId, instructorId },
@@ -21,7 +32,7 @@ export const createStripeAccountLink = async (instructorId?: string, stripeAccou
   }
   let createdStripeAccountId = stripeAccountId
   if (!createdStripeAccountId) {
-    const account = await stripe.accounts.create({
+    const account = await getStripe().accounts.create({
       controller: {
         stripe_dashboard: {
           type: 'express',
@@ -42,7 +53,7 @@ export const createStripeAccountLink = async (instructorId?: string, stripeAccou
     })
   }
 
-  const accountLink = await stripe.accountLinks.create({
+  const accountLink = await getStripe().accountLinks.create({
     account: createdStripeAccountId,
     refresh_url: `${ENV.INSTRUCTOR_URL}/onboarding`,
     return_url: `${ENV.INSTRUCTOR_URL}/onboarding`,
