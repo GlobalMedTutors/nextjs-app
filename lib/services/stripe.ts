@@ -17,11 +17,21 @@ export function getStripe(): Stripe {
   return _stripe
 }
 
-export const createPaymentIntent = async (instructorId: string, amount: number, studentId: string) => {
+export const createPaymentIntent = async (
+  instructorId: string,
+  amount: number,
+  studentId: string,
+  transactionId?: string
+) => {
+  const metadata: Record<string, string> = { studentId, instructorId }
+  if (transactionId) {
+    metadata.transactionId = transactionId
+  }
+
   const paymentIntent = await getStripe().paymentIntents.create({
     amount: amount * 100,
     currency: 'usd',
-    metadata: { studentId, instructorId },
+    metadata,
   })
   return paymentIntent.client_secret
 }

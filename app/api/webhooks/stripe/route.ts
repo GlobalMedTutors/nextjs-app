@@ -23,24 +23,40 @@ export async function POST(request: NextRequest) {
   try {
     if (event.type === 'payment_intent.succeeded') {
       const paymentIntent = event.data.object as any
-      const { studentId, instructorId } = paymentIntent.metadata
+      const { studentId, instructorId, transactionId } = paymentIntent.metadata
 
-      // Find the transaction
-      const transaction = await prisma.transaction.findFirst({
-        where: {
-          credit: {
-            studentId,
-            instructorId,
+      if (!studentId || !instructorId) {
+        console.error('Missing metadata in payment intent:', paymentIntent.metadata)
+        return NextResponse.json({ received: true }) // Don't fail webhook
+      }
+
+      let transaction
+      if (transactionId) {
+        // Use transaction ID if provided
+        transaction = await prisma.transaction.findUnique({
+          where: { id: transactionId },
+          include: { credit: true },
+        })
+      } else {
+        // Fallback: find most recent pending transaction
+        transaction = await prisma.transaction.findFirst({
+          where: {
+            credit: {
+              studentId,
+              instructorId,
+            },
+            paymentStatus: 'PENDING',
           },
-          paymentStatus: 'PENDING',
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      })
+          include: { credit: true },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        })
+      }
 
-      if (transaction) {
-        const credits = Math.floor(paymentIntent.amount / 100) // Assuming 1 credit = $1
+      if (transaction && transaction.credit) {
+        // Use credits from transaction, or calculate from amount
+        const credits = transaction.credits || Math.floor(paymentIntent.amount / 100)
         await purchaseCredits(
           transaction.id,
           instructorId,
@@ -48,6 +64,8 @@ export async function POST(request: NextRequest) {
           paymentIntent.id,
           studentId
         )
+      } else {
+        console.error('Transaction not found for payment intent:', paymentIntent.id)
       }
     }
 

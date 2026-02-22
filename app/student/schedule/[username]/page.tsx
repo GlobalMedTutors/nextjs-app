@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 
 interface Instructor {
   id: string
@@ -26,6 +26,7 @@ const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 
 export default function SchedulePage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const username = params.username as string
   const [instructor, setInstructor] = useState<Instructor | null>(null)
   const [availability, setAvailability] = useState<Availability[]>([])
@@ -34,16 +35,52 @@ export default function SchedulePage() {
   const [duration, setDuration] = useState<number>(60)
   const [loading, setLoading] = useState(true)
   const [booking, setBooking] = useState(false)
+  const [creditBalance, setCreditBalance] = useState<number | null>(null)
+  const [checkingCredits, setCheckingCredits] = useState(false)
 
   useEffect(() => {
     fetchInstructor()
   }, [username])
 
   useEffect(() => {
+    // Check if returning from credit purchase
+    const date = searchParams.get('date')
+    const time = searchParams.get('time')
+    const durationParam = searchParams.get('duration')
+    if (date && time) {
+      setSelectedDate(date)
+      setSelectedTime(time)
+      if (durationParam) {
+        setDuration(Number(durationParam))
+      }
+      // Refresh credit balance after instructor loads
+      if (instructor?.id) {
+        setTimeout(() => {
+          fetchCreditBalance()
+        }, 1000)
+      }
+    }
+  }, [searchParams, instructor?.id])
+
+  useEffect(() => {
     if (instructor?.id) {
       fetchAvailability()
+      fetchCreditBalance()
     }
   }, [instructor?.id])
+
+  const fetchCreditBalance = async () => {
+    if (!instructor?.id) return
+    try {
+      const res = await fetch(`/api/credits?instructorId=${instructor.id}`)
+      if (res.ok) {
+        const data = await res.json()
+        setCreditBalance(data.balance || 0)
+      }
+    } catch (error) {
+      console.error('Error fetching credit balance:', error)
+    }
+  }
 
   const fetchInstructor = async () => {
     try {
@@ -101,8 +138,37 @@ export default function SchedulePage() {
     return slots
   }
 
+  const calculateRequiredCredits = () => {
+    if (!instructor?.ratePerHour) return 0
+    // 1 credit = 1 hour of lesson time
+    return Math.ceil(duration / 60)
+  }
+
+  const calculateCost = () => {
+    if (!instructor?.ratePerHour) return 0
+    return (instructor.ratePerHour * duration) / 60
+  }
+
   const handleBookLesson = async () => {
     if (!selectedDate || !selectedTime || !instructor) return
+
+    const requiredCredits = calculateRequiredCredits()
+    const cost = calculateCost()
+
+    // Check if student has enough credits
+    if (creditBalance !== null && creditBalance < requiredCredits) {
+      const confirmPurchase = confirm(
+        `You need ${requiredCredits} credits to book this lesson, but you only have ${creditBalance} credits.\n\n` +
+        `Would you like to purchase credits for $${cost.toFixed(2)}?`
+      )
+      if (confirmPurchase) {
+        router.push(
+          `/student/purchase-credits?instructorId=${instructor.id}&amount=${cost}&credits=${requiredCredits}&returnTo=${encodeURIComponent(`/student/schedule/${username}?date=${selectedDate}&time=${selectedTime}&duration=${duration}`)}`
+        )
+        return
+      }
+      return
+    }
 
     setBooking(true)
     try {
@@ -138,11 +204,24 @@ export default function SchedulePage() {
           alert('There are scheduling conflicts. Please choose a different time.')
         } else {
           alert('Lesson booked successfully!')
+          // Refresh credit balance
+          await fetchCreditBalance()
           router.push('/student/lessons')
         }
       } else {
         const error = await res.json()
-        alert(error.error || 'Failed to book lesson')
+        if (error.error?.includes('Insufficient credits')) {
+          const confirmPurchase = confirm(
+            `You don't have enough credits. Would you like to purchase credits for $${cost.toFixed(2)}?`
+          )
+          if (confirmPurchase) {
+            router.push(
+              `/student/purchase-credits?instructorId=${instructor.id}&amount=${cost}&credits=${requiredCredits}&returnTo=${encodeURIComponent(`/student/schedule/${username}?date=${selectedDate}&time=${selectedTime}&duration=${duration}`)}`
+            )
+          }
+        } else {
+          alert(error.error || 'Failed to book lesson')
+        }
       }
     } catch (error) {
       console.error('Error booking lesson:', error)
@@ -245,11 +324,36 @@ export default function SchedulePage() {
         </div>
 
         {instructor.ratePerHour && (
-          <div className="bg-gray-50 p-4 rounded-md">
-            <p className="text-sm text-gray-600">Rate per hour: ${instructor.ratePerHour}</p>
-            <p className="text-lg font-semibold mt-2">
-              Total: ${((instructor.ratePerHour * duration) / 60).toFixed(2)}
-            </p>
+          <div className="bg-gray-50 p-4 rounded-md space-y-2">
+            <div className="flex justify-between">
+              <p className="text-sm text-gray-600">Rate per hour:</p>
+              <p className="text-sm font-medium">${instructor.ratePerHour}</p>
+            </div>
+            <div className="flex justify-between">
+              <p className="text-sm text-gray-600">Duration:</p>
+              <p className="text-sm font-medium">{duration} minutes</p>
+            </div>
+            <div className="flex justify-between">
+              <p className="text-sm text-gray-600">Cost:</p>
+              <p className="text-sm font-medium">${calculateCost().toFixed(2)}</p>
+            </div>
+            <div className="flex justify-between">
+              <p className="text-sm text-gray-600">Credits required:</p>
+              <p className="text-sm font-medium">{calculateRequiredCredits()}</p>
+            </div>
+            {creditBalance !== null && (
+              <div className="flex justify-between pt-2 border-t">
+                <p className="text-sm font-medium">Your credit balance:</p>
+                <p className={`text-sm font-semibold ${creditBalance < calculateRequiredCredits() ? 'text-red-600' : 'text-green-600'}`}>
+                  {creditBalance}
+                </p>
+              </div>
+            )}
+            {creditBalance !== null && creditBalance < calculateRequiredCredits() && (
+              <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
+                ⚠️ Insufficient credits. You'll need to purchase credits to book this lesson.
+              </div>
+            )}
           </div>
         )}
 
