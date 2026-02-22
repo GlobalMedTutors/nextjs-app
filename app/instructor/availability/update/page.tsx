@@ -15,6 +15,36 @@ export default function UpdateAvailabilityPage() {
   const router = useRouter()
   const [slots, setSlots] = useState<AvailabilitySlot[]>([])
   const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchAvailability()
+  }, [])
+
+  const fetchAvailability = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/availability')
+      if (res.ok) {
+        const data = await res.json()
+        // Convert availability data to slots format
+        const existingSlots: AvailabilitySlot[] = data.map((av: any) => {
+          const startTime = new Date(av.startTime)
+          const endTime = new Date(av.endTime)
+          return {
+            dayOfWeek: av.dayOfWeek,
+            startTime: `${String(startTime.getHours()).padStart(2, '0')}:${String(startTime.getMinutes()).padStart(2, '0')}`,
+            endTime: `${String(endTime.getHours()).padStart(2, '0')}:${String(endTime.getMinutes()).padStart(2, '0')}`,
+          }
+        })
+        setSlots(existingSlots)
+      }
+    } catch (error) {
+      console.error('Error fetching availability:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const addSlot = () => {
     setSlots([
@@ -87,13 +117,21 @@ export default function UpdateAvailabilityPage() {
     }
   }
 
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <p>Loading availability...</p>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-3xl font-bold mb-6">Update Availability</h1>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6 space-y-6">
         {slots.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">No availability slots added yet.</p>
+          <p className="text-gray-500 text-center py-8">No availability slots added yet. Click "Add Time Slot" to add your first availability.</p>
         ) : (
           <div className="space-y-4">
             {slots.map((slot, index) => (

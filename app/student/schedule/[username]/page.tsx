@@ -97,11 +97,16 @@ export default function SchedulePage() {
   }
 
   const fetchAvailability = async () => {
+    if (!instructor?.id) return
     try {
-      const res = await fetch(`/api/availability?instructorId=${instructor?.id}`)
+      const res = await fetch(`/api/availability?instructorId=${instructor.id}`)
       if (res.ok) {
         const data = await res.json()
-        setAvailability(data)
+        console.log('Fetched availability for instructor:', instructor.id, data)
+        setAvailability(data || [])
+      } else {
+        const errorText = await res.text()
+        console.error('Failed to fetch availability:', res.status, errorText)
       }
     } catch (error) {
       console.error('Error fetching availability:', error)
@@ -302,7 +307,19 @@ export default function SchedulePage() {
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500">No available time slots for this date</p>
+              <div className="text-gray-500 space-y-2">
+                <p>No available time slots for this date.</p>
+                {availability.length === 0 && (
+                  <p className="text-sm text-yellow-600">
+                    ⚠️ This instructor hasn't set their availability yet.
+                  </p>
+                )}
+                {availability.length > 0 && (
+                  <p className="text-sm text-gray-400">
+                    Available days: {availability.map(av => DAYS[av.dayOfWeek]).join(', ')}
+                  </p>
+                )}
+              </div>
             )}
           </div>
         )}
